@@ -1,0 +1,9 @@
+{
+    "pgPath": "ospath",
+    "host": "String",
+    "pgUser": "String",
+    "pgPass": "String",
+    "pgPort": 5432,
+    "pgDBName": "String",
+    "encoding": "UTF8"
+}

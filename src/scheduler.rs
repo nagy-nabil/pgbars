@@ -4,7 +4,13 @@ use windows::{
     Win32::System::{Com::*, Ole::VariantInit, TaskScheduler::*},
 };
 
-pub fn win_schedule_daily() -> Result<(), Error> {
+pub struct Time {
+    pub h: u8,
+    pub m: u8,
+    pub s: u8,
+}
+
+pub fn win_schedule_daily(exec: String, time: Time) -> Result<(), Error> {
     unsafe {
         // solve Error: Os { code: -2147467262, kind: Uncategorized, message: "No such interface supported" }
         // @link https://github.com/microsoft/windows-rs/issues/1946
@@ -86,8 +92,18 @@ pub fn win_schedule_daily() -> Result<(), Error> {
         let daily_trigger = trigger.cast::<IDailyTrigger>()?;
         daily_trigger.SetId(&BSTR::from(r"TriggerDailyNagyus"))?;
 
-        daily_trigger.SetStartBoundary(&BSTR::from(r"2023-05-02T03:00:00"))?;
-        daily_trigger.SetEndBoundary(&BSTR::from(r"2024-05-02T03:00:00"))?;
+        daily_trigger.SetStartBoundary(&BSTR::from(format!(
+            "2023-05-02T{:0>2}:{:0>2}:{:0>2}",
+            time.h.to_string(),
+            time.m.to_string(),
+            time.s.to_string()
+        )))?;
+        daily_trigger.SetEndBoundary(&BSTR::from(format!(
+            "2030-05-02T{}:{}:{}",
+            time.h.to_string(),
+            time.m.to_string(),
+            time.s.to_string()
+        )))?;
         daily_trigger.SetDaysInterval(1)?;
         // Add a repetition to the trigger so that it repeats
         // five times.
@@ -104,8 +120,8 @@ pub fn win_schedule_daily() -> Result<(), Error> {
         let action = action_collection.Create(TASK_ACTION_EXEC)?;
         let exec_action = action.cast::<IExecAction>()?;
         //  Set the path of the executable to notepad.exe.
-        exec_action.SetPath(&BSTR::from(r"C:\Program Files\LGHUB\lghub.exe"))?;
-
+        exec_action.SetPath(&BSTR::from(exec))?;
+        exec_action.SetArguments(&BSTR::from("/c \"pgbrs\""))?;
         //  ------------------------------------------------------
         //  Save the task in the root folder.
         folder.RegisterTaskDefinition(
